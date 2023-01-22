@@ -1,12 +1,8 @@
-import { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import style from './SearchBar.module.css';
 
-export class Searchbar extends Component {
-  render() {
-    const { onSubmit, onChange, query } = this.props;
-    return (
+export const Searchbar = ({ onSubmit, onChange, query }) => (
       <header className={style.searchBar}>
         <form className={style.form} onSubmit={onSubmit}>
           <button type="submit" className={style.button}>
@@ -24,9 +20,7 @@ export class Searchbar extends Component {
           />
         </form>
       </header>
-    );
-  }
-}
+)
 
 Searchbar.propTypes = {
   onSubmit: PropTypes.func,

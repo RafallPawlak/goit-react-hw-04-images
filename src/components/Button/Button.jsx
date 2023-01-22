@@ -1,12 +1,8 @@
-import { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import style from './Button.module.css';
 
-export class Button extends Component {
-  render() {
-    const { label, handleLoadMore } = this.props;
-    return (
+export const Button = ({ label, handleLoadMore })=> (
       <button
         type="button"
         className={style.ButtonLoadMore}
@@ -15,8 +11,6 @@ export class Button extends Component {
         {label}
       </button>
     );
-  }
-}
 
 Button.propTypes = {
   label: PropTypes.string,
