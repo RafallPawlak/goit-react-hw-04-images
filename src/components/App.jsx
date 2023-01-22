@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchImages } from 'api/Api';
 import { Report } from 'notiflix/build/notiflix-report-aio';
 
@@ -9,79 +9,75 @@ import { Button } from './Button/Button';
 import { Modal } from './Modal/Modal';
 import { Loader } from './Loader/Loader.jsx';
 
-export class App extends Component {
-  state = {
-    query: '',
-    page: 1,
-    images: [],
-    isLoading: false,
-    lastPage: 1,
-    error: null,
-    modal: {
-      showModal: false,
-      largeImageURL: ''
-    },
-    noResults: false,
+export const App = () => {
+  const [input, setInput] = useState('');
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastPage, setLastPage] = useState(0);
+  const [error, setError] = useState(null);
+  const [modal, setModal] = useState({
+    showModal: false,
+    largeImageURL: '',
+  });
+  const [noResults, setNoResults] = useState(false);
+
+ const handleChange = event => {
+    setInput(event.target.value);
   };
 
-  handleChange = event => {
-    this.setState({ query: event.target.value });
-  };
+  useEffect(() => {
+     if (page === 0) return;
 
-  fetchImagesByQuery = async searchQuery => {
-    this.setState({ isLoading: true, error: null, noResults: false });
-    try {
-      const response = await fetchImages(searchQuery, this.state.page);
-      this.setState(prevState => ({
-        images: [...prevState.images, ...response.hits],
-        lastPage: Math.ceil(response.totalHits / 12),
-      }));
-      if (response.totalHits === 0) {
-        this.setState({ noResults: true });
+    const fetchImagesByQuery = async searchQuery => {
+      setIsLoading(true);
+      setError(null);
+      setNoResults(false);
+      try {
+        const response = await fetchImages(searchQuery, page);
+        setImages(prevState => [...prevState, ...response.hits]);
+        setLastPage(Math.ceil(response.totalHits / 12));
+
+        if (response.totalHits === 0) {
+          setNoResults(true);
+        }
+      } catch (error) {
+        setError(error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      this.setState({ error });
-    } finally {
-      this.setState({ isLoading: false });
-    }
-  };
+    };
+    fetchImagesByQuery(query);
+    }, [page, query]);
 
-  handleSubmit = event => {
+  const handleSubmit = event => {
     event.preventDefault();
-    if (this.state.query === '') {
-      alert('Please enter your query');
+    if (input === '') {
+      Report.warning(
+              'Warning',
+              'Please enter your query',
+              'Okay',
+            )         
       return;
     }
-    this.setState({ images: [], page: 1 }, () => {
-      this.fetchImagesByQuery(this.state.query);
-    });
+    setImages([]);
+    setPage(1);
+    setQuery(input);
   };
 
-  handleLoadMore = () => {
-    this.setState({ page: this.state.page + 1 }, () => {
-      this.fetchImagesByQuery(this.state.query);
-    });
+  const handleLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  onImageClick = largeImageURL => {
-    this.setState({ showModal: true, largeImageURL: largeImageURL });
+  const toggleModal = () => {
+    setModal(prevState => ({ ...prevState, showModal: !prevState.showModal }));
   };
 
-  onClose = () => {
-    this.setState({ showModal: false, largeImageURL: '' });
+  const onImageClick = largeImageURL => {
+    setModal(prevState => ({ ...prevState, largeImageURL }));
+    toggleModal();
   };
-
-  render() {
-    const {
-      page,
-      images,
-      isLoading,
-      lastPage,
-      error,
-      showModal,
-      largeImageURL,
-      noResults,
-    } = this.state;
 
     return (
       <div
@@ -93,9 +89,9 @@ export class App extends Component {
         }}
       >
         <Searchbar
-          onSubmit={this.handleSubmit}
-          onChange={this.handleChange}
-          query={this.state.query}
+          onSubmit={handleSubmit}
+          onChange={handleChange}
+          input={input}
         />
         <Section>
           {isLoading && <Loader />}
@@ -106,7 +102,7 @@ export class App extends Component {
               'Okay',
             )         
           )}
-        <ImageGallery images={images} onImageClick={this.onImageClick} />
+        <ImageGallery images={images} onImageClick={onImageClick} />
           {error && (
              Report.warning(
               'Warning',
@@ -118,15 +114,14 @@ export class App extends Component {
         {page < lastPage && !isLoading && !error ? (
           <Button
             label={'Load more'}
-            handleLoadMore={this.handleLoadMore}
+            handleLoadMore={handleLoadMore}
           />
         ) : (
           <div style={{ height: 40 }}></div>
         )}
-        {showModal && (
-          <Modal onClose={this.onClose} largeImageURL={largeImageURL} />
+        {modal.showModal && (
+          <Modal onClose={toggleModal} largeImageURL={modal.largeImageURL} />
         )}
       </div>
     );
   }
-}
